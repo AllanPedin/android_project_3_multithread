@@ -280,6 +280,8 @@ obj/
 # IntelliJ IDEA
 *.iml
 /out/
+
+#remove this whole file
 .idea
 
 # User-specific configurations
