@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">Android_project_3_multithread</string>
+    <string-array name="JASON_URL_NAME">
+        <item>CNU - Defender</item>
+        <item>Pair - Teton Software - Pets</item>
+    </string-array>
+
+    <string-array name="JSON_URL">
+        <item>https://www.pcs.cnu.edu/~kperkins/pets/</item>
+        <item>https://www.tetonsoftware.com/pets/</item>
+    </string-array>
 </resources>
