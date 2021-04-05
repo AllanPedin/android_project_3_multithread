@@ -77,11 +77,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void getPets() {
-        if(!connectivityChecker.isNetworkReachable()){
-            spinner.setVisibility(View.GONE);
-            return;
-        }
-
         DownloadJSONTask downloadJSONTask =  new DownloadJSONTask();
         downloadJSONTask.execute();
 
@@ -110,12 +105,22 @@ public class MainActivity extends AppCompatActivity {
     }
     Spinner spinner;
     private void menuSetup() {
-        System.out.println("MEAINFASOFINAEWSFONAGOLAWENBGASDOLNFGASDFNASDF________________!!!!!!!!!!!!!!!!!!!!!!!!!!___________++++++++++++++++++++++++");
         spinner = findViewById(R.id.pet_spinner);
+        if(!connectivityChecker.isNetworkReachable()){
+            spinner.setVisibility(View.GONE);
+            return;
+        }
+        if(pets == null){
+            spinner.setVisibility(View.GONE);
+            return;
+        }
+        spinner.setVisibility(View.VISIBLE);
+
         for(int i =0; i< pets.length();i++){
             try {
-                petNames.add(pets.getJSONObject(i).getString("name"));
-                petImageNames.add(pets.getJSONObject(i).getString("file"));
+                    petNames.add(pets.getJSONObject(i).getString("name"));
+                    petImageNames.add(pets.getJSONObject(i).getString("file"));
+
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -158,6 +163,10 @@ public class MainActivity extends AppCompatActivity {
             public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
                 if(key.equals("listPref")){
                     urlString = sharedPreferences.getString("listPref", null);
+                    petImageNames.clear();
+                    petNames.clear();
+                    pets = null;
+                    getPets();
                     menuSetup();
                     loadImage();
                 }
@@ -171,11 +180,21 @@ public class MainActivity extends AppCompatActivity {
     private void loadImage() {
         if(!connectivityChecker.isNetworkReachable()){ //no network
             petImage.setImageResource(R.drawable.dinosaur);
+            largeTextView.setVisibility(View.VISIBLE);
+            smallTextView.setVisibility(View.VISIBLE);
             largeTextView.setText(NO_NETWORK_TEXT_LARGE);
             smallTextView.setText(NO_NETWORK_TEXT_SMALL);
             return;
+        }else if(pets == null){
+            petImage.setImageResource(R.drawable.dinosaur);
+            largeTextView.setVisibility(View.VISIBLE);
+            smallTextView.setVisibility(View.VISIBLE);
+            largeTextView.setText("404!");
+            smallTextView.setText("For "+ urlString);
         }else{
             petImage.setImageBitmap(bitmapOfImage);
+            largeTextView.setVisibility(View.GONE);
+            smallTextView.setVisibility(View.GONE);
         }
     }
     private class DownloadJSONTask extends AsyncTask<String, Void, JSONArray>{
