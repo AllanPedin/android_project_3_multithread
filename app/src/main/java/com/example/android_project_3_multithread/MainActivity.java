@@ -3,6 +3,7 @@ package com.example.android_project_3_multithread;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.preference.PreferenceManager;
+import androidx.viewpager2.widget.ViewPager2;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -36,6 +37,8 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collector;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -57,6 +60,11 @@ public class MainActivity extends AppCompatActivity {
     ImageView petImage;
     TextView largeTextView;
     TextView smallTextView;
+
+    private ArrayList<Bitmap> image_bitmaps = new ArrayList<>();
+
+    ViewPager2 vp;
+    ViewPager2_Adapter csa;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -72,19 +80,46 @@ public class MainActivity extends AppCompatActivity {
 
         menuSetup();
 
-        loadImage();
+        retrieveImages();
 
+        vp=findViewById(R.id.view_pager);
+        //create an instance of the swipe adapter
+        csa = new ViewPager2_Adapter(this, image_bitmaps);
+
+        //set this viewpager to the adapter
+        vp.setAdapter(csa);
+
+//        loadImage();
+
+    }
+    private void retrieveImages(){
+        for(String imageStr : petImageNames){
+            Download_Image_Task imageDownload = new Download_Image_Task();
+            try {
+                image_bitmaps.add(imageDownload.execute(urlString+imageStr).get());
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void getPets() {
         DownloadJSONTask downloadJSONTask =  new DownloadJSONTask();
-        downloadJSONTask.execute();
-
         try {
-            Thread.sleep(500);
+            downloadJSONTask.execute().get();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
+//        try {
+//            Thread.sleep(500);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
     }
 
     private void getPrefValues(SharedPreferences settings) {
@@ -93,9 +128,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void setFields(){
         connectivityChecker =  new ConnectivityCheck(this);
-        petImage = findViewById(R.id.image_view);
-        largeTextView = findViewById(R.id.text_view_large);
-        smallTextView = findViewById(R.id.text_view_small);
+//        petImage = findViewById(R.id.image_view);
+//        largeTextView = findViewById(R.id.text_view_large);
+//        smallTextView = findViewById(R.id.text_view_small);
     }
     Toolbar toolbar;
     private void toolBarSetup(){
@@ -103,18 +138,18 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
     }
-    Spinner spinner;
+//    Spinner spinner;
     private void menuSetup() {
-        spinner = findViewById(R.id.pet_spinner);
-        if(!connectivityChecker.isNetworkReachable()){
-            spinner.setVisibility(View.GONE);
-            return;
-        }
-        if(pets == null){
-            spinner.setVisibility(View.GONE);
-            return;
-        }
-        spinner.setVisibility(View.VISIBLE);
+//        spinner = findViewById(R.id.pet_spinner);
+//        if(!connectivityChecker.isNetworkReachable()){
+//            spinner.setVisibility(View.GONE);
+//            return;
+//        }
+//        if(pets == null){
+//            spinner.setVisibility(View.GONE);
+//            return;
+//        }
+//        spinner.setVisibility(View.VISIBLE);
 
         for(int i =0; i< pets.length();i++){
             try {
@@ -130,13 +165,13 @@ public class MainActivity extends AppCompatActivity {
             array[j] = petNames.get(j);
         }
         // Create an ArrayAdapter using the string array and a default spinner layout
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, array);
-        // Apply the adapter to the spinner
-        spinner.setAdapter(adapter);
-        spinner.setSelection(0);
-
-        SpinnerActivity onSelect = new SpinnerActivity();
-        spinner.setOnItemSelectedListener(onSelect);
+//        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, array);
+//        // Apply the adapter to the spinner
+//        spinner.setAdapter(adapter);
+//        spinner.setSelection(0);
+//
+//        SpinnerActivity onSelect = new SpinnerActivity();
+//        spinner.setOnItemSelectedListener(onSelect);
     }
 
     @Override
@@ -164,11 +199,12 @@ public class MainActivity extends AppCompatActivity {
                 if(key.equals("listPref")){
                     urlString = sharedPreferences.getString("listPref", null);
                     petImageNames.clear();
+                    image_bitmaps.clear();
                     petNames.clear();
                     pets = null;
                     getPets();
-                    menuSetup();
-                    loadImage();
+//                    menuSetup();
+//                    loadImage();
                 }
             }
         };
@@ -237,71 +273,71 @@ public class MainActivity extends AppCompatActivity {
     private void setPets(JSONArray _pets){
         this.pets = _pets;
     }
-    public class SpinnerActivity extends Activity implements AdapterView.OnItemSelectedListener {
-
-        public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-            System.out.println("---------------------------------------------------");
-            try {
-                selectedImageName = pets.getJSONObject(pos).getString("file");
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-            DownloadImageTask downloadImage = new DownloadImageTask();
-            downloadImage.execute();
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            loadImage();
-        }
-
-        public void onNothingSelected(AdapterView<?> parent) {
-            // Another interface callback
-        }
-    }
-    public class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
-
-        @Override
-        protected Bitmap doInBackground(String... strings) {
-            try{
-                URL url = new URL(urlString + selectedImageName);
-                HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
-
-                connection.connect();
-
-                int statusCode = connection.getResponseCode();
-                if (statusCode / 100 != 2) {
-                    return null;
-                }
-
-                InputStream is = connection.getInputStream();
-                BufferedInputStream bis = new BufferedInputStream(is);
-
-                // the following buffer will grow as needed
-                ByteArrayOutputStream baf = new ByteArrayOutputStream(50);
-                //ByteArrayBuffer baf = new ByteArrayBuffer(DEFAULTBUFFERSIZE);
-                int current = 0;
-
-                while ((current = bis.read()) != -1) {
-                    baf.write((byte) current);
-
-                    //probably want to check for canceled here
-                }
-
-                // convert to a bitmap
-                byte[] imageData = baf.toByteArray();
-                bitmapOfImage = BitmapFactory.decodeByteArray(imageData, 0, imageData.length);
-                return bitmapOfImage;
-            } catch (MalformedURLException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return null;
-        }
-
-    }
+//    public class SpinnerActivity extends Activity implements AdapterView.OnItemSelectedListener {
+//
+//        public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
+//            System.out.println("---------------------------------------------------");
+//            try {
+//                selectedImageName = pets.getJSONObject(pos).getString("file");
+//            } catch (JSONException e) {
+//                e.printStackTrace();
+//            }
+//            DownloadImageTask downloadImage = new DownloadImageTask();
+//            downloadImage.execute();
+//            try {
+//                Thread.sleep(500);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//            loadImage();
+//        }
+//
+//        public void onNothingSelected(AdapterView<?> parent) {
+//            // Another interface callback
+//        }
+//    }
+//    public class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
+//
+//        @Override
+//        protected Bitmap doInBackground(String... strings) {
+//            try{
+//                URL url = new URL(urlString + selectedImageName);
+//                HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+//
+//                connection.connect();
+//
+//                int statusCode = connection.getResponseCode();
+//                if (statusCode / 100 != 2) {
+//                    return null;
+//                }
+//
+//                InputStream is = connection.getInputStream();
+//                BufferedInputStream bis = new BufferedInputStream(is);
+//
+//                // the following buffer will grow as needed
+//                ByteArrayOutputStream baf = new ByteArrayOutputStream(50);
+//                //ByteArrayBuffer baf = new ByteArrayBuffer(DEFAULTBUFFERSIZE);
+//                int current = 0;
+//
+//                while ((current = bis.read()) != -1) {
+//                    baf.write((byte) current);
+//
+//                    //probably want to check for canceled here
+//                }
+//
+//                // convert to a bitmap
+//                byte[] imageData = baf.toByteArray();
+//                bitmapOfImage = BitmapFactory.decodeByteArray(imageData, 0, imageData.length);
+//                return bitmapOfImage;
+//            } catch (MalformedURLException e) {
+//                e.printStackTrace();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//            return null;
+//        }
+//
+//    }
 
 
 }
