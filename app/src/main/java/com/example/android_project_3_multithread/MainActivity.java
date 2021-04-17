@@ -82,21 +82,29 @@ public class MainActivity extends AppCompatActivity {
 
         retrieveImages();
 
-        vp=findViewById(R.id.view_pager);
-        //create an instance of the swipe adapter
-        csa = new ViewPager2_Adapter(this, image_bitmaps);
-
-        //set this viewpager to the adapter
-        vp.setAdapter(csa);
+        setupViewPager();
 
 //        loadImage();
 
     }
+    private void setupViewPager(){
+        vp=findViewById(R.id.view_pager);
+        //create an instance of the swipe adapter
+        csa = new ViewPager2_Adapter(this, image_bitmaps, petNames);
+        //set this viewpager to the adapter
+        vp.setAdapter(csa);
+    }
     private void retrieveImages(){
+        if(petImageNames.size()<=0 || petImageNames ==null){
+            Bitmap dinasaur = BitmapFactory.decodeResource(getResources(),R.drawable.dinosaur);
+            image_bitmaps.add(dinasaur);
+            petNames.add("Server Returned 404");
+        }
         for(String imageStr : petImageNames){
             Download_Image_Task imageDownload = new Download_Image_Task();
             try {
-                image_bitmaps.add(imageDownload.execute(urlString+imageStr).get());
+                Bitmap image = imageDownload.execute(urlString+imageStr).get();
+                image_bitmaps.add(image);
             } catch (ExecutionException e) {
                 e.printStackTrace();
             } catch (InterruptedException e) {
@@ -141,14 +149,12 @@ public class MainActivity extends AppCompatActivity {
 //    Spinner spinner;
     private void menuSetup() {
 //        spinner = findViewById(R.id.pet_spinner);
-//        if(!connectivityChecker.isNetworkReachable()){
-//            spinner.setVisibility(View.GONE);
-//            return;
-//        }
-//        if(pets == null){
-//            spinner.setVisibility(View.GONE);
-//            return;
-//        }
+        if(!connectivityChecker.isNetworkReachable()){
+            return;
+        }
+        if(pets == null){
+            return;
+        }
 //        spinner.setVisibility(View.VISIBLE);
 
         for(int i =0; i< pets.length();i++){
@@ -203,7 +209,12 @@ public class MainActivity extends AppCompatActivity {
                     petNames.clear();
                     pets = null;
                     getPets();
-//                    menuSetup();
+
+                    menuSetup();
+
+                    retrieveImages();
+
+                    setupViewPager();
 //                    loadImage();
                 }
             }

@@ -18,6 +18,7 @@ import java.util.ArrayList;
 public class ViewPager2_Adapter extends RecyclerView.Adapter {
     private final Context ctx;
     private final LayoutInflater li;
+    private final ArrayList<String> image_labels;
     private ArrayList<Bitmap> image_bitmaps;
 
     class PagerViewHolder extends RecyclerView.ViewHolder {
@@ -54,9 +55,9 @@ public class ViewPager2_Adapter extends RecyclerView.Adapter {
         @Override
         protected Void doInBackground(Void... params) {
 
-            //just sleep for a bit
+//            just sleep for a bit
             try {
-                Thread.sleep(2000); //sleep for 2 seconds
+                Thread.sleep(500); //sleep for 2 seconds
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -70,6 +71,12 @@ public class ViewPager2_Adapter extends RecyclerView.Adapter {
             if (this.myVh.position == this.original_position){
                 //still valid
                 //set the result on the main thread
+                if(image_bitmaps.size()==0 || image_bitmaps == null){
+                    myVh.tv.setText(image_labels.get(this.myVh.position));
+                    myVh.iv.setImageResource(R.drawable.dinosaur);
+                    return;
+                }
+                myVh.tv.setText(image_labels.get(this.myVh.position));
                 myVh.iv.setImageBitmap(image_bitmaps.get(this.myVh.position));//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////SET IMAGE HERE
             }
             else
@@ -79,9 +86,13 @@ public class ViewPager2_Adapter extends RecyclerView.Adapter {
 
 
 
-    public ViewPager2_Adapter(Context ctx, ArrayList<Bitmap> bits){
+    public ViewPager2_Adapter(Context ctx, ArrayList<Bitmap> bits, ArrayList<String> labels){
         this.ctx=ctx;
+//        if(bits.isEmpty()){
+//            this.
+//        }
         this.image_bitmaps = bits;
+        this.image_labels = labels;
         //will use this to ceate swipe_layouts in onCreateViewHolder
         li=(LayoutInflater)ctx.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     }
@@ -102,7 +113,7 @@ public class ViewPager2_Adapter extends RecyclerView.Adapter {
 
         //set to some default image
         viewHolder.iv.setImageResource(R.drawable.dinosaur);
-        viewHolder.tv.setText("Image : " + position);
+        viewHolder.tv.setText("Getting Info");
         viewHolder.position=position;       //remember which image this view is bound to
 
         //launch a thread to 'retreive' the image
